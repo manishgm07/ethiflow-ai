@@ -9,7 +9,9 @@ import { AlertsBanner } from "@/components/traffic/AlertsBanner";
 import { ImpactStrip } from "@/components/traffic/ImpactStrip";
 import { JunctionCard } from "@/components/traffic/JunctionCard";
 import { JunctionGraphic } from "@/components/brand/JunctionGraphic";
+import { SupervisorPanel, OperatorPanel } from "@/components/traffic/SupervisorOperatorPanel";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
 import { pick } from "@/lib/i18n";
 import { JUNCTION_IDS, JUNCTIONS, type JunctionId } from "@/lib/sim/junctions";
 import { useSim } from "@/lib/sim/provider";
@@ -27,6 +29,7 @@ export const Route = createFileRoute("/_console/dashboard")({
 
 function DashboardPage() {
   const { t, i18n } = useTranslation();
+  const { role } = useAuth();
   const [selectedJunction, setSelectedJunction] = useState<JunctionId>("silk-board");
   const [safeZoneActive, setSafeZoneActive] = useState(false);
   const [fixedTimerMode, setFixedTimerMode] = useState(false);
@@ -209,6 +212,18 @@ function DashboardPage() {
           <AlertsBanner max={6} />
         </div>
       </div>
+
+      {/* Role-specific panel: Supervisor sees command center, Operator sees field controls */}
+      {role === "supervisor" && (
+        <section className="mt-8">
+          <SupervisorPanel />
+        </section>
+      )}
+      {role === "operator" && (
+        <section className="mt-8">
+          <OperatorPanel />
+        </section>
+      )}
     </RoleGate>
   );
 }

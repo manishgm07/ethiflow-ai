@@ -6,6 +6,8 @@ import { Area, AreaChart, CartesianGrid, ComposedChart, Line, ReferenceLine, Res
 
 import { PageHeader, RoleGate } from "@/components/shell/ModulePage";
 import { ConfidencePill, LevelBadge } from "@/components/traffic/badges";
+import { PlainLanguageForecast } from "@/components/traffic/PlainLanguageForecast";
+import { JunctionSelector, type JunctionFilter } from "@/components/traffic/JunctionSelector";
 import { ChartContainer, ChartTooltipContent } from "@/components/ui/chart";
 import { pick } from "@/lib/i18n";
 import { forecast, HORIZONS, trendSeries } from "@/lib/sim/engine";
@@ -27,13 +29,32 @@ function PredictionsPage() {
   const { t, i18n } = useTranslation();
   const tick = useSim((s) => s.tick);
   const [selectedJunction, setSelectedJunction] = useState<JunctionId>("silk-board");
+  const [junctionFilter, setJunctionFilter] = useState<JunctionFilter>("all");
 
   const trendData = trendSeries(selectedJunction, tick);
+
+  // Filter junctions for the matrix based on the junction filter
+  const displayJunctions = junctionFilter === "all" ? JUNCTION_IDS : [junctionFilter];
 
   return (
     <RoleGate navKey="predictions">
       <PageHeader navKey="predictions" title={t("modules.predictions.title")} desc={t("modules.predictions.desc")} />
-      
+
+      {/* Junction Selector — accessible to ALL roles */}
+      <section className="mb-6">
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("forecast.filterJunction")}</h3>
+        <JunctionSelector value={junctionFilter} onChange={(v) => {
+          setJunctionFilter(v);
+          if (v !== "all") setSelectedJunction(v);
+        }} />
+      </section>
+
+      {/* Plain-Language Forecast Cards */}
+      <section className="mb-8 rounded-xl border bg-card shadow-panel p-5">
+        <h2 className="text-base font-semibold mb-4">{t("forecast.plainTitle")}</h2>
+        <PlainLanguageForecast />
+      </section>
+
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-xl border bg-card shadow-panel">
           <div className="border-b px-5 py-4">
@@ -51,12 +72,12 @@ function PredictionsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {JUNCTION_IDS.map((id) => {
+                {displayJunctions.map((id) => {
                   const j = JUNCTIONS[id];
                   const active = selectedJunction === id;
                   return (
-                    <tr 
-                      key={id} 
+                    <tr
+                      key={id}
                       className={cn("cursor-pointer transition-colors hover:bg-muted/50", active && "bg-muted/50")}
                       onClick={() => setSelectedJunction(id)}
                     >
@@ -86,7 +107,7 @@ function PredictionsPage() {
             <p className="text-sm text-muted-foreground">{t("predictions.trendTitle")}</p>
           </div>
           <div className="p-5 flex-1 min-h-[350px]">
-            <ChartContainer config={{ 
+            <ChartContainer config={{
               actual: { label: t("predictions.actual"), color: "var(--color-primary)" },
               forecast: { label: t("predictions.forecast"), color: "var(--color-amber)" },
               band: { label: t("predictions.band"), color: "var(--color-amber)" }
@@ -97,11 +118,11 @@ function PredictionsPage() {
                 <YAxis domain={[0, 100]} tickLine={false} axisLine={false} tickMargin={10} />
                 <Tooltip content={<ChartTooltipContent />} />
                 <ReferenceLine y={70} stroke="var(--color-status-severe)" strokeDasharray="3 3" opacity={0.5} label={{ value: t("predictions.severeZone"), position: 'insideTopLeft', fill: 'var(--color-status-severe)', fontSize: 10 }} />
-                
+
                 {/* Uncertainty band */}
                 <Area type="monotone" dataKey="high" stroke="none" fill="var(--color-amber)" fillOpacity={0.1} />
                 <Area type="monotone" dataKey="low" stroke="none" fill="var(--color-background)" fillOpacity={1} />
-                
+
                 {/* Lines */}
                 <Line type="monotone" dataKey="actual" stroke="var(--color-primary)" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="forecast" stroke="var(--color-amber)" strokeWidth={2} strokeDasharray="4 4" dot={false} />
